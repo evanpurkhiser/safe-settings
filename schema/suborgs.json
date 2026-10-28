@@ -24,6 +24,36 @@
         "type": "string"
       }
     },
+    "suborgfilters": {
+      "type": "object",
+      "description": "Repository metadata filters. Filter fields are ANDed; multiple values within a field are ORed. Filters apply after name, team, and custom property selectors. Without another selector, filters apply to every repository.",
+      "minProperties": 1,
+      "additionalProperties": false,
+      "properties": {
+        "visibility": {
+          "description": "Allowed repository visibilities.",
+          "oneOf": [
+            {
+              "type": "string",
+              "enum": ["public", "private", "internal"]
+            },
+            {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "enum": ["public", "private", "internal"]
+              }
+            }
+          ]
+        },
+        "fork": {
+          "type": "boolean",
+          "description": "Whether repositories must be forks."
+        }
+      }
+    },
     "suborgteams": {
       "type": "array",
       "description": "Team slugs. Repos that belong to any of these teams are included in this suborg.",

@@ -68,6 +68,28 @@ describe('Repository', () => {
       })
     })
 
+    it('reports repository visibility changes', async () => {
+      github.rest.repos.get.mockResolvedValueOnce({
+        data: { name: 'test', visibility: 'private', private: true, topics: [] }
+      })
+      const plugin = configure({ visibility: 'public' })
+
+      await plugin.sync()
+
+      expect(plugin.visibilityChanged).toBe(true)
+    })
+
+    it('does not report visibility when it is already configured', async () => {
+      github.rest.repos.get.mockResolvedValueOnce({
+        data: { name: 'test', visibility: 'public', private: false, topics: [] }
+      })
+      const plugin = configure({ visibility: 'public' })
+
+      await plugin.sync()
+
+      expect(plugin.visibilityChanged).toBe(false)
+    })
+
     it('syncs topics', () => {
       const plugin = configure({
         topics: ['foo', 'bar']

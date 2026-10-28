@@ -94,7 +94,7 @@ app_installations:
 | --- | --- |
 | `lib/plugins/appInstallations.js` | Reconcile desired vs. live repo access per app (`syncDelta` / `syncFull`). Not `Diffable` — app installations are an org-scoped target, not a per-repo list. |
 | `lib/appOctokitClient.js` | Enterprise-level App client for the Enterprise Organization Installations API. |
-| `lib/repoSelector.js` | Resolve a repo set from **fixed** criteria: name, team, custom properties, or "all". |
+| `lib/repoSelector.js` | Resolve a repo set from **fixed** criteria: name, team, custom properties, metadata filters, or "all". |
 | `lib/settings.js` | `syncAppInstallations` phase; delta computation from changed configs; full desired-state computation; app-aware NOP reporting. |
 | `lib/nopcommand.js` | Carries an optional `subject` / `subjectType` so reporting can render the **app** (not the org placeholder repo) as the subject of a change. |
 | `index.js` | Enterprise-client enrichment on the context (`getEnterpriseAppClient`); `installation_target` webhook handler; startup `verifyAppInstallationsPlugin` diagnostic. |

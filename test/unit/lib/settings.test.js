@@ -302,6 +302,31 @@ repository:
         //   console.log(e)
         // }
       })
+
+      it('filters org-wide suborg resolution by metadata', async () => {
+        mockSubOrg = undefined
+        subOrgConfig = {
+          suborgrepos: ['*'],
+          suborgfilters: { visibility: 'public', fork: false },
+          repositories: { has_wiki: false }
+        }
+        settings = createSettings(stubConfig)
+        jest.spyOn(settings, 'loadConfigMap').mockReturnValue([
+          { name: 'frontend', path: '.github/suborgs/frontend.yml' }
+        ])
+        jest.spyOn(settings, 'loadYaml').mockResolvedValue(subOrgConfig)
+        stubContext.octokit.paginate.mockResolvedValue([
+          { name: 'public-repo', visibility: 'public', fork: false },
+          { name: 'public-fork', visibility: 'public', fork: true },
+          { name: 'private-repo', visibility: 'private', fork: false }
+        ])
+
+        const subOrgConfigs = await settings.getSubOrgConfigs()
+
+        expect(subOrgConfigs['public-repo']).toBeDefined()
+        expect(subOrgConfigs['public-fork']).toBeUndefined()
+        expect(subOrgConfigs['private-repo']).toBeUndefined()
+      })
     })
 
     describe('repo-scoped suborg config resolution', () => {
@@ -391,6 +416,34 @@ repository:
         const subOrgConfigs = await settings.getSubOrgConfigs({ owner: 'test', repo: 'some-repo' })
 
         expect(Object.keys(subOrgConfigs)).toHaveLength(0)
+      })
+
+      it('filters a matching repo by metadata', async () => {
+        subOrgConfig.suborgfilters = { visibility: 'public', fork: false }
+        settings = createRepoScopedSettings()
+        stubContext.octokit.rest.repos.get = jest.fn().mockResolvedValue({
+          data: { visibility: 'public', private: false, fork: true }
+        })
+
+        const subOrgConfigs = await settings.getSubOrgConfigs({ owner: 'test', repo: 'new-repo' })
+
+        expect(subOrgConfigs['new-repo']).toBeUndefined()
+        expect(stubContext.octokit.rest.repos.get).toHaveBeenCalledTimes(1)
+      })
+
+      it('matches metadata filters without another selector', async () => {
+        subOrgConfig = {
+          suborgfilters: { visibility: ['public', 'internal'], fork: false },
+          repositories: { has_wiki: false }
+        }
+        settings = createRepoScopedSettings()
+        stubContext.octokit.rest.repos.get = jest.fn().mockResolvedValue({
+          data: { visibility: 'public', private: false, fork: false }
+        })
+
+        const subOrgConfigs = await settings.getSubOrgConfigs({ owner: 'test', repo: 'some-repo' })
+
+        expect(subOrgConfigs['some-repo']).toBeDefined()
       })
 
       it('falls back to the org-wide path when processing a suborg config change', async () => {
@@ -688,6 +741,10 @@ repository:
         expect(settings.shouldConsiderReevaluation(repo, null, { propertiesChanged: true })).toBe(true)
       })
 
+      it('returns true when repository visibility changed', () => {
+        expect(settings.shouldConsiderReevaluation(repo, null, { visibilityChanged: true })).toBe(true)
+      })
+
       it('returns true on repository rename', () => {
         expect(settings.shouldConsiderReevaluation(repo, null, { renamed: true })).toBe(true)
       })
@@ -723,6 +780,11 @@ repository:
 
       it('returns true when repo-yml has custom_properties', () => {
         settings.repoConfigs = { 'foo.yaml': { custom_properties: [{ name: 'EDP', value: 'true' }] } }
+        expect(settings.shouldConsiderReevaluation(repo, { name: 'foo' })).toBe(true)
+      })
+
+      it('returns true when repo-yml manages visibility', () => {
+        settings.repoConfigs = { 'foo.yml': { repository: { visibility: 'public' } } }
         expect(settings.shouldConsiderReevaluation(repo, { name: 'foo' })).toBe(true)
       })
 

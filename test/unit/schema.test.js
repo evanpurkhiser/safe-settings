@@ -156,6 +156,28 @@ describe.each(files)('%s schema', file => {
   })
 })
 
+describe('suborg filter validation', () => {
+  it.each([
+    { visibility: 'public' },
+    { visibility: ['public', 'internal'] },
+    { fork: false },
+    { visibility: 'private', fork: true }
+  ])('accepts filters %j', suborgfilters => {
+    expect(validators.suborgs({ suborgfilters })).toBe(true)
+  })
+
+  it.each([
+    {},
+    { bogus: true },
+    { visibility: 'all' },
+    { visibility: [] },
+    { visibility: ['public', 'public'] },
+    { fork: 'false' }
+  ])('rejects invalid filters %j', suborgfilters => {
+    expect(validators.suborgs({ suborgfilters })).toBe(false)
+  })
+})
+
 describe('ruleset scope validation', () => {
   const properties = [{ team: 'backend' }]
   const scopes = [

@@ -148,5 +148,77 @@ describe('RepoSelector', () => {
       // paginate called once for getAllRepos, not for teams
       expect(github.paginate).toHaveBeenCalledTimes(1)
     })
+
+    it('filters the union of other selectors by metadata', async () => {
+      github.paginate.mockResolvedValue([
+        { name: 'public-repo', visibility: 'public' },
+        { name: 'private-repo', visibility: 'private' }
+      ])
+
+      const selector = new RepoSelector(github, 'my-org', log)
+      const result = await selector.resolve({
+        names: ['public-repo', 'private-repo'],
+        filters: { visibility: 'public' }
+      })
+
+      expect(result).toEqual(new Set(['public-repo']))
+    })
+
+    it('selects all repositories matching filters used alone', async () => {
+      github.paginate.mockResolvedValue([
+        { name: 'public-repo', visibility: 'public' },
+        { name: 'private-repo', private: true },
+        { name: 'legacy-public-repo', private: false }
+      ])
+
+      const selector = new RepoSelector(github, 'my-org', log)
+      const result = await selector.resolve({ filters: { visibility: 'public' } })
+
+      expect(result).toEqual(new Set(['public-repo', 'legacy-public-repo']))
+    })
+
+    it('does not broaden an empty selector result to every visible repository', async () => {
+      github.paginate.mockResolvedValue([
+        { name: 'public-repo', visibility: 'public' }
+      ])
+
+      const selector = new RepoSelector(github, 'my-org', log)
+      const result = await selector.resolve({
+        names: ['missing-repo'],
+        filters: { visibility: 'public' }
+      })
+
+      expect(result).toEqual(new Set())
+    })
+
+    it('ORs multiple values within a filter field', async () => {
+      github.paginate.mockResolvedValue([
+        { name: 'public-repo', visibility: 'public' },
+        { name: 'internal-repo', visibility: 'internal' },
+        { name: 'private-repo', visibility: 'private' }
+      ])
+
+      const selector = new RepoSelector(github, 'my-org', log)
+      const result = await selector.resolve({
+        filters: { visibility: ['public', 'internal'] }
+      })
+
+      expect(result).toEqual(new Set(['public-repo', 'internal-repo']))
+    })
+
+    it('ANDs different filter fields', async () => {
+      github.paginate.mockResolvedValue([
+        { name: 'public-source', visibility: 'public', fork: false },
+        { name: 'public-fork', visibility: 'public', fork: true },
+        { name: 'private-source', visibility: 'private', fork: false }
+      ])
+
+      const selector = new RepoSelector(github, 'my-org', log)
+      const result = await selector.resolve({
+        filters: { visibility: 'public', fork: false }
+      })
+
+      expect(result).toEqual(new Set(['public-source']))
+    })
   })
 })

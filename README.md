@@ -200,8 +200,9 @@ A repo's suborg membership can depend on state that is itself written by `safe-s
 - `suborgteams` — repos belong to a suborg because a given team is granted access
 - `suborgproperties` — repos belong to a suborg because a custom property has a given value
 - `suborgrepos` — repos belong to a suborg because their name matches a glob
+- `suborgfilters` — repos selected by the other criteria are filtered by metadata
 
-When a repo-level change (a push to `.github/repos/<repo>.yml`, or a `repository.created` event for a brand-new repo) adds, removes, or changes a team or custom property, the repo may start or stop matching a suborg config. A new repo may also start matching a suborg because its name matches a `suborgrepos` glob.
+When a repo-level change (a push to `.github/repos/<repo>.yml`, or a `repository.created` event for a brand-new repo) adds, removes, or changes a team, custom property, or repository visibility, the repo may start or stop matching a suborg config. A new repo may also start matching a suborg because its name matches a `suborgrepos` glob.
 
 To handle this, after applying a repo-yml change `safe-settings` re-evaluates the repo's suborg membership. If the matched suborg source set changed, it runs the repo through the apply pipeline a second time so newly matched suborg settings are applied and settings from a no-longer-matching suborg can be removed in the same sync.
 
@@ -781,7 +782,7 @@ are selected for the app:
 | Layer | File | Repos selected for the app |
 | --- | --- | --- |
 | Org | `settings.yml` | All repos in the org |
-| Suborg | `suborgs/*.yml` | Repos matching the suborg's targeting (`suborgrepos`, `suborgteams`, `suborgproperties`) |
+| Suborg | `suborgs/*.yml` | Repos matching the suborg's targeting (`suborgrepos`, `suborgteams`, `suborgproperties`, `suborgfilters`) |
 | Repo | `repos/<repo>.yml` | That specific repo |
 
 > [!important]
@@ -900,6 +901,7 @@ In addition to the values in the file above, the settings file can have some add
 2. `template`: This is set in the repo-level settings, and is used with the `force_create` flag to use a specific repo template when creating the repo
 3. `suborgrepos`: This is set in the suborg-level settings to define an array of repos. This field can also take a `glob` pattern to allow wild-card expression to specify repos in a suborg. For e.g. `test*` would include `test`, `test1`, `testing`, etc.
 4. The `suborgteams` section contains a list of teams, and all the repos belonging to the teams would be part of the `suborg`
+5. `suborgfilters`: This filters repositories by metadata after applying `suborgrepos`, `suborgteams`, and `suborgproperties`. Filter fields are ANDed, while multiple values within a field are ORed. When used by itself, it filters every repository. For example, `suborgfilters: {visibility: [public, internal], fork: false}` selects public or internal repositories that are not forks.
 
 
 ### Environment variables

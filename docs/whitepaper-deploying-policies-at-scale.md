@@ -208,6 +208,7 @@ Sub-organizations ("suborgs") are a powerful abstraction for grouping repositori
 | **Repository name pattern** | `suborgrepos` | `suborgrepos: ["api-*", "service-*"]` |
 | **Team membership** | `suborgteams` | `suborgteams: ["platform-core"]` |
 | **Custom property values** | `suborgproperties` | `suborgproperties: [{"compliance": "sox"}]` |
+| **Repository metadata** | `suborgfilters` | `suborgfilters: {visibility: [public], fork: false}` |
 
 This flexibility enables policies to be applied based on organizational structure, project taxonomy, or compliance classification — all without hard-coding repository lists.
 
